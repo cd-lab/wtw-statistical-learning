@@ -1,0 +1,358 @@
+<!-- /*
+* working experiment
+*/ -->
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Decision Making Experiment</title>
+    <!--packages loaded on the pavlovia cluster-->
+    <script type="text/javascript" src="lib/vendors/jspsych-6.0.0/jspsych.js"></script>
+    <link rel="stylesheet" type="text/css" href="lib/vendors/jspsych-6.0.0/css/jspsych.css"/>
+    <script type="text/javascript" src="lib/vendors/jspsych-6.0.0/plugins/jspsych-html-keyboard-response.js"></script>
+    <script type="text/javascript" src="lib/vendors/jspsych-6.0.0/plugins/jspsych-fullscreen.js"></script>
+    <script src="lib/vendors/jspsych-6.0.0/plugins/jspsych-call-function.js"></script>
+    <script type="text/javascript" src="lib/vendors/jspsych-6.0.0/plugins/jspsych-image-keyboard-response.js"></script>
+    <script src="lib/vendors/jspsych-6.0.0/plugins/jspsych-call-function.js"></script>
+    <script type="text/javascript" src="lib/vendors/jquery-2.2.0.min.js"></script>
+    <script type="text/javascript" src="lib/jspsych-pavlovia-3.0.0.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/themes/black-tie/jquery-ui.min.css" rel="stylesheet" type="text/css"></link>
+    <!--customized packages always loaded-->
+    <link rel="stylesheet" type="text/css" href="wtw/wtw.css"/>
+    <script src="wtw/wtw-standard-expire-prac.js"></script>
+    <script src="wtw/wtw-standard-expire-block.js"></script>
+    <script src="wtw/wtw-latent-prac.js"></script>
+    <script src="wtw/wtw-latent-block.js"></script>
+    <script src="wtw/instructions.js"></script>
+    <script src="wtw/instructions_text.js"></script>
+    <style>
+      body {
+        position: relative;
+        height:  100%;
+        width:  100%;
+      }
+      .jspsych-display-element {
+        font-size: 30px;
+      }
+    </style>
+  </head>
+  <body id = 'body'></body>
+  <script>
+
+    // for online experiments, get experiment info for the URL
+    var workerId = jsPsych.data.getURLVariable("workerId")
+    if(workerId == undefined){
+      workerId = "unknown"
+    }
+
+    console.log(workerId)
+
+    var assignmentId = jsPsych.data.getURLVariable("assignmentId")
+    if(assignmentId == undefined){
+      assignmentId = "unknown"
+    }
+
+    var hitId = jsPsych.data.getURLVariable("hitId")
+    if(hitId == undefined){
+      hitId == "unknown"
+    }
+
+    var timing_condition_latent = jsPsych.data.getURLVariable("timing_condition_latent")
+    if(timing_condition_latent == undefined){
+      timing_condition_latent == "LP"
+    }
+
+    var cb = "standard"
+
+    var completionId = jsPsych.data.getURLVariable("completionId")
+    if(completionId == undefined){
+      completionId == "unknown"
+    }
+
+
+    var subjectId = jsPsych.data.getURLVariable("subjectId")
+    if(subjectId == undefined){
+      subjectId == "unknown"
+    }
+
+    /* init connection with pavlovia.org */
+    var pavlovia_init = {
+      type: "pavlovia",
+      command: "init"
+    };
+
+    console.log(timing_condition_latent)
+
+    // change color settings
+    var change_colors = {
+      type: 'call-function',
+      func: function(){
+        $('.jspsych-display-element').css('background-color', 'grey')
+        $('.jspsych-display-element').css('color', 'white')
+      }
+    }
+
+
+    // instructions1, task inro
+    var instructions_1 = {
+      type: "instructions",
+      pages: ['<p style="color: white; font-size: 30px; line-height: 2">This task will consist of two blocks.</p>' +
+      '<p style="color: white; font-size: 30px; line-height: 2">Please click "Next" to start practicing for the first block.</p>',
+
+      '<p style="color: white; font-size: 30px; line-height: 2" id="instruction">You will see a token on the screen. Tokens can be sold for money.</p>' +
+      '<p style="color: white; font-size: 30px; line-height: 2">Each token is worth 0 cents at first.</p>' +
+      '<p style="color: white; font-size: 30px; line-height: 2">After some time, it "matures" and is worth 3 cents. </p>',
+
+      '<p style="color: white; font-size: 30px; line-height: 2">Try a practice round.</p>' +
+      '<p style="color: white; font-size: 30px; line-height: 2">Wait for the token to mature, then press the spacebar to sell it as quickly as possible.</p>' +
+      '<p style="color: white; font-size: 30px; line-height: 2">Be careful! If you wait too long, it will expire!</p>' +
+      '<p style="color: white; font-size: 30px; line-height: 2">Click "Next" to start.</p>'],
+      key_forward: "j",
+      key_backward: "f",
+      show_clickable_nav: true,
+      allow_backward: true
+    }
+
+
+      // trial with the same structure as the latent learning block, task is to sell as soon as it matures
+      var practice_1 = {
+        type: 'wtw-latent-prac',
+        scheduled_delay: 10000,
+        trial_id: 'prac_1',
+        maturation_value: 3,
+        instruction: "mature",
+        iti: 500
+      }
+
+      // instructions 4, task is to sell as soon as it matures
+      var instructions_2 = {
+        type: "instructions",
+        pages: ['<p style="color: white; font-size: 30px; line-height: 2"> Ok, let'+ "&#39s do it again.</p>" +
+        '<p style="color: white; font-size: 30px; line-height: 2">Wait for the token to mature, then sell it.</p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">Click "Next" to start.</p>'],
+        key_forward: "j",
+        key_backward: "f",
+        show_clickable_nav: true,
+      }
+
+
+      // trial with the same structure as the latent learning block, task is to sell as soon as it matures
+      var practice_2 = {
+        type: 'wtw-latent-prac',
+        scheduled_delay: 10000,
+        trial_id: 'prac_2',
+        maturation_value: 3,
+        instruction: "mature",
+        iti: 500
+      }
+
+      var instructions_3 = {
+        type: "instructions",
+        pages: ['<p style="color: white; font-size: 30px; line-height: 2">The progress bar will show you how long the current token has been on the screen.</p>' +
+              '<img src="wtw/img/standard_cropped.png", style="width: 60%"></img>',
+
+              '<p style="color: white; font-size: 30px; line-height: 2">We are almost ready to start!</p>' +
+              '<p style="color: white; font-size: 30px; line-height: 2">You will not be able to sell the token before it matures. If you respond too early, you will be penalized by 3 cents.</p>' +
+              '<p style="color: white; font-size: 30px; line-height: 2">Click "Next" to move on.</p>',
+
+              '<p style="color: white; font-size: 30px; line-height: 2">In the upcoming block, you will have 15 minutes to play.</p>' +
+              '<p style="color: white; font-size: 30px; line-height: 2">Your goal is to sell each token as quickly as possible after it matures.</p>' +
+              '<p style="color: white; font-size: 30px; line-height: 2">If you respond too slowly after it matures, it will expire and you will not be able to sell it.</p>' +
+              '<p style="color: white; font-size: 30px; line-height: 2">Remember that you cannot sell the token before it matures.</p>',
+
+              '<p style="color: white; font-size: 30px; line-height: 2">At the end of the experiment, you will be paid what you earned as a bonus in addition to your $6 baseline payment.</p>',
+
+              "<p style= 'color: white; font-size: 30px; line-height: 2' id='instruction'>Please avoid closing the tab midway through the task. You may lose your data in that case.</p>" +
+              "<p style= 'color: white; font-size: 30px; line-height: 2' id='instruction'>You will be given explicit instructions to close the tab at the end.</p>" +
+              '<p style="color: white; font-size: 30px; line-height: 2" id="instruction">Make sure you have 30 minutes of undistracted time before you start.</p>'+
+              "<p style= 'color: white; font-size: 30px; line-height: 2' id='instruction'>If you are ready, click 'Next' to move on.</p>"],
+        key_forward: "j",
+        key_backward: "f",
+        show_clickable_nav: true,
+        allow_backward: true
+      }
+
+
+
+      // instruction in between blocks
+      var instructions_4 = {
+        type: "instructions",
+        pages: ['<p style="color: white; font-size: 30px; line-height: 2">You just completed the first block. Please take a break but make sure not to exit fullscreen mode.</p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">Whenever you are ready, please click "Next" to start practicing for the second block.</p>',
+
+        '<p style="color: white; font-size: 30px; line-height: 2">The second block will last 10 minutes.</p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">Your task will be similiar to your task in the first block and tokens will behave in a similar way. They will be worth 0 cents at first. After some time, they will "mature" and be worth 3 cents.</p>',
+
+        '<p style="color: white; font-size: 30px; line-height: 2">In the upcoming block, you will be able to sell tokens before they mature without being penalized. If you do, you will receive 0 cents and move on to the next token.</p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">You might want to do this if a token is taking too long, since you have a limited amount of time to play.</p>',
+
+        '<p style="color: white; font-size: 30px; line-height: 2">In the following practice trial, try selling the token before it matures.</p>'],
+        key_forward: "j",
+        key_backward: "f",
+        show_clickable_nav: true,
+        allow_backward: true
+      }
+
+      // practice_3
+      var practice_3 = {
+        type: 'wtw-standard-expire-prac',
+        scheduled_delay: 10000,
+        trial_id: 'prac_3',
+        maturation_value: 3,
+        instruction: "immature",
+        iti: 500
+      }
+
+      // instructions 5
+      var instructions_5 = {
+        type: "instructions",
+        pages: ['<p style="color: white; font-size: 30px; line-height: 2"> Ok, let'+ "&#39s do it again.</p>" +
+        '<p style="color: white; font-size: 30px; line-height: 2">Practice selling the token before it matures.</p>'],
+        key_forward: "j",
+        key_backward: "f",
+        show_clickable_nav: true,
+      }
+
+      // practice_4
+      var practice_4 = {
+        type: 'wtw-standard-expire-prac',
+        scheduled_delay: 10000,
+        trial_id: 'prac_4',
+        maturation_value: 3,
+        instruction: "immature",
+        iti: 500
+      }
+
+      // instructions 6
+      var instructions_6 = {
+        type: "instructions",
+        pages: ['<p style="color: white; font-size: 30px; line-height: 2">Remember that you will have 10 minutes to play and that you can get as many tokens as time permits.</p>' +
+        "<p style= 'color: white; font-size: 30px; line-height: 2' id='instruction'>Please click 'Next' to start the second block.</p>"],
+        key_forward: "j",
+        key_backward: "f",
+        show_clickable_nav: true,
+      }
+
+
+      var enter_fullscreen = {
+        type: 'fullscreen',
+        fullscreen_mode: true,
+        message: '<p style="color: white; font-size: 30px; line-height: 2">Please click "Next" to enable full screen mode and start the game.</p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">You will automatically exit full screen mode at the end.</p>',
+        button_label: 'Next'
+      }
+
+      var exit_fullscreen = {
+        type: 'fullscreen',
+        fullscreen_mode: false,
+        delay_after: 0
+      }
+
+        // wtw_latent_learning
+        var wtw_latent_learning = {
+            type: "wtw-latent-block",
+            condition: timing_condition_latent,
+            block_time: 1500 * 60 * 10,
+            maturation_value: 3,
+            iti: 500,
+            cb: cb
+        }
+
+        // decision block
+        var wtw_standard = {
+          type: "wtw-standard-expire-block",
+          condition: "LP",
+          block_time: 1000 * 60 * 10,
+          maturation_value: 3,
+          iti: 500,
+          cb: cb,
+          initialEarnings: function(){
+            var earnObj = jsPsych.data.get().filter({trial_type: 'wtw-latent-block'}).select('totalEarnings')
+            var firstblock_earnings = earnObj.values[0]
+            if (firstblock_earnings.length >= 1) {
+              return(firstblock_earnings[firstblock_earnings.length - 1])
+            } else {
+              return(0)
+            }
+          }
+        }
+
+    // store exp info
+    jsPsych.data.addProperties({
+      workerId: workerId,
+      assignmentId: assignmentId,
+      hitId: hitId,
+      completionId: completionId,
+      subjectId: subjectId,
+      cb: cb,
+      timing_condition_latent: timing_condition_latent
+    })
+
+    // debriefing
+    var debriefing = {
+      type: "instructions",
+      pages: function(){
+          var earnObj = jsPsych.data.get().filter({trial_type: 'wtw-standard-expire-block'}).select('totalEarnings')
+          var earnings = earnObj.values[0] // which is an array
+          if(earnObj.values[0].length  == 0){
+            return(['<p style="color: white; font-size: 30px; line-height: 2">You earned a bonus of 0 $ in this decision-making game. </p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">Click "Next" to save your data.</p>'])
+          }else{
+            var earningsCount = (earnings[earnings.length - 1]) / 100
+            var earningsCountToDisplay = earningsCount.toFixed(2);
+            console.log(earnings[earnings.length - 1]/100)
+            return(['<p style="color: white; font-size: 30px; line-height: 2">You earned a bonus of $' + earningsCountToDisplay +
+        ' in this decision-making game. </p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">Click "Next" to save your data.</p>'])
+          }
+      },
+      key_forward: "j",
+      key_backward: "f",
+      button_label_next: "Next",
+      show_clickable_nav: true
+    }
+
+
+    jsPsych.data.get().addToLast({success: true});
+    /* finish connection with pavlovia.org */
+    var pavlovia_finish = {
+      type: "pavlovia",
+      command: "finish",
+      participantId: subjectId
+    };
+
+    /* start the experiment. Comment the following chunk when testing locally */
+    jsPsych.init({
+      timeline: [pavlovia_init, change_colors, instructions_1, practice_1, instructions_2, practice_2, instructions_3, enter_fullscreen, wtw_latent_learning, instructions_4, practice_3, instructions_5, practice_4, instructions_6, wtw_standard, debriefing, pavlovia_finish, exit_fullscreen],
+
+      on_interaction_data_update: function(data) {
+        console.log(JSON.stringify(data))
+        if (JSON.stringify(data)[21] == "x"){ // if the 21st element is 21, then it is a fullscreenexit
+          jsPsych.data.addProperties({
+            fullscreenExitIndex: JSON.stringify(data)
+          })
+        }
+
+        if (JSON.stringify(data)[21] == "n"){ // if the 21st element is 21, then it is a fullscreenenter
+          jsPsych.data.addProperties({
+            fullscreenEnterIndex: JSON.stringify(data)
+          })
+        }
+
+      },
+
+      on_finish: function(){
+        document.body.innerHTML = '<p style="color: white; font-size: 30px; line-height: 2"> Please wait. You will be redirected to a new page in a few moments.</p>'
+        setTimeout(function(){document.body.innerHTML =
+          '<p style="color: white; font-size: 30px; line-height: 2"> Data successfully saved. Your completion code for mTurk is: ' + completionId +'.</p>' +
+          '<p style="color: white; font-size: 30px; line-height: 2">After copying the completion code into mTurk, you can close this tab.</p>'
+        }, 5000)
+      }
+    });
+
+
+  </script>
+</html>

@@ -1,0 +1,690 @@
+# Analysis script for Study 2b
+
+# Working directory should automatically be set to file location, if not: Specify using setwd()
+
+# Load libraries
+library('tcltk')
+library('survival')
+library('lattice')
+library('ggplot2')
+library('psych')
+library('jtools')
+source('wtwFxs.R')
+library('matrixStats')
+library('beeswarm')
+library("jtools")
+library("lme4")
+library("lsr")
+library("BayesFactor")
+library("lmerTest")
+library("boot")
+library("dplyr")
+
+# Set data directory
+dataDir <- "../study 2b/data"
+setwd(dataDir)
+
+# select and load all data files
+file.names <- list.files(pattern = "*_data.csv")
+
+# will load all data files in a list named "df,list"- each file can be accessed using df.list[[d]]
+df.list <- lapply(file.names, function(file.name)
+{
+  df           <- read.csv(file.name)
+  df$file.name <- file.name
+  return(df)
+})
+
+
+length(df.list) # number of participants in the list
+
+# check the loaded data files and save out a summary
+# data_summary: Should have basic information on each participant, such as
+# ID, date of participation, condition, number of trials, duration, and a check for the inclusion criteria
+
+IDs <- c()
+earnings <- c()
+date <- c()
+file_name <- c()
+
+b1_lastSellTime <- c()
+b2_lastSellTime <- c()
+
+b1_numTrials <- c()
+b2_numTrials <- c()
+
+b1_timingCond <- c()
+b2_timingCond <- c()
+
+b1_medianRT <- c()
+b2_medianRT <- c()
+
+b1_maxScheduledDelay <- c()
+b2_maxScheduledDelay <- c()
+
+b1_lastSellTimeCheck <- c()
+b2_lastSellTimeCheck <- c()
+
+b1_prop_expired <- c()
+b2_prop_expired <- c()
+
+b1_prop_expiredCheck <- c()
+b2_prop_expiredCheck <- c()
+
+b1_prop_immature <- c()
+b1_prop_immatureCheck <- c()
+
+for (d in 1:length(df.list)){
+  
+  data <- df.list[[d]]
+  
+  b1_data <- subset(data, n_block == 1)
+  b2_data <- subset(data, n_block == 2)
+  
+  IDs <- c(IDs, data$subject_id[1])
+  earnings <- c(earnings, max(data$n_total_earnings))
+  date <- c(date, substr(data$file_name[1], start = 50, stop = 57))
+  file_name <- c(file_name, data$file_name[1])
+  
+  b1_lastSellTime <- c(b1_lastSellTime, max(b1_data$n_sell_time_fin, na.rm = TRUE))
+  b2_lastSellTime <- c(b2_lastSellTime, max(b2_data$n_sell_time_fin, na.rm = TRUE))
+  
+  b1_numTrials <- c(b1_numTrials, as.numeric(max(b1_data$n_trialIdx)))
+  b2_numTrials <- c(b2_numTrials, as.numeric(max(b2_data$n_trialIdx)))
+  
+  b1_timingCond <- c(b1_timingCond, b1_data$f_timing_condition[1])
+  b2_timingCond <- c(b2_timingCond, b2_data$f_timing_condition[1])
+  
+  b1_medianRT <- c(b1_medianRT, median( b1_data$RT, na.rm = T))
+  b2_medianRT <- c(b2_medianRT, median( b2_data$RT, na.rm = T))
+  
+  b1_maxScheduledDelay <- c(b1_maxScheduledDelay, max(b1_data$n_scheduled_delay))
+  b2_maxScheduledDelay <- c(b2_maxScheduledDelay, max(b2_data$n_scheduled_delay))
+  
+  # Check for exclusion criteria
+  ####  BLOCK 1  ####
+  # Participants will be excluded if they fail to complete the entire passive exposure block. 
+  if (b1_lastSellTime[d] <= 900 - 60){
+    b1_lastSellTimeCheck <- c(b1_lastSellTimeCheck, 0)
+    print("Warning: This participant did not complete the whole task.")
+  } else if (b1_lastSellTime[d] > 900 - 60){
+    b1_lastSellTimeCheck <- c(b1_lastSellTimeCheck, 1)
+  }
+  
+  # Participants will be excluded if they were too slow to sell tokens that had matured. A token expires 1 s after maturing and participants will be excluded if more than 20% of their tokens expire.
+  # All sell times in block 1 that are NAs
+  b1_prop_expired <- c(b1_prop_expired, sum(is.na(b1_data$n_sell_time_fin))/nrow(b1_data))
+  
+  if(b1_prop_expired[d] > 0.2){
+    b1_prop_expiredCheck <- c(b1_prop_expiredCheck, 0)
+  } else {
+    b1_prop_expiredCheck <- c(b1_prop_expiredCheck, 1)
+  }
+  
+  # Participants will be excluded if they responded prematurely (by making a “sell” response before the token matured) on more than 20% of trials. 
+  count_keypress <- c()
+  
+  for (i in 1:nrow(b1_data)){
+    if (is.na(b1_data$keypress_times[i])){
+      # no immature keypress
+      count_keypress <- c(count_keypress, 0)
+    } else if (b1_data$keypress_times[i] == ""){
+      # no immature keypress
+      count_keypress <- c(count_keypress, 0)
+    } else {
+      #  immature keypress
+      count_keypress <- c(count_keypress, 1)
+    }
+  }
+ 
+  b1_prop_immature <- c(b1_prop_immature, sum(count_keypress)/nrow(b1_data))
+  
+  if(b1_prop_immature[d] > 0.2){
+    b1_prop_immatureCheck <- c(b1_prop_immatureCheck, 0)
+  } else {
+    b1_prop_immatureCheck <- c(b1_prop_immatureCheck, 1)
+  }
+  
+  ####  BLOCK 2  #### 
+  # Participants will be excluded if they fail to complete the entire decision block. 
+  if (b2_lastSellTime[d] <= 600 - 60){
+    b2_lastSellTimeCheck <- c(b2_lastSellTimeCheck, 0)
+    print("Warning: This participant did not complete the whole task.")
+  } else if (b2_lastSellTime[d] > 600 - 60){
+    b2_lastSellTimeCheck <- c(b2_lastSellTimeCheck, 1)
+  }
+  
+  # Participants will be excluded if they were too slow to sell tokens that had matured. A token expires 1 s after maturing and participants will be excluded if more than 20% of their tokens expire.
+  b2_prop_expired <- c(b2_prop_expired, sum(is.na(b2_data$n_sell_time_fin))/nrow(b1_data))
+  
+  if(b2_prop_expired[d] > 0.2){
+    b2_prop_expiredCheck <- c(b2_prop_expiredCheck, 0)
+  } else {
+    b2_prop_expiredCheck <- c(b2_prop_expiredCheck, 1)
+  }
+  
+  # Add quit index to each data set
+  # If there is no sell time, the token expired
+  df.list[[d]]$idxExpired <- rep(0, nrow(df.list[[d]]))
+  df.list[[d]]$idxExpired[which(is.na(df.list[[d]]$n_sell_time_fin))] <- 1
+  
+  # If there is no rewarded time, token was sold before it matured
+  df.list[[d]]$idxQuit <- rep(0, nrow(df.list[[d]]))
+  df.list[[d]]$idxQuit[which(is.na(df.list[[d]]$n_rewarded_time_fin))] <- 1
+  
+}
+
+dataSummary <- as.data.frame(cbind(IDs, date, b1_numTrials, b2_numTrials, earnings, b1_timingCond, b2_timingCond, b1_maxScheduledDelay, b2_maxScheduledDelay, b1_medianRT, b2_medianRT, b1_lastSellTime, b1_lastSellTimeCheck, b1_prop_immature, b1_prop_immatureCheck, b1_prop_expired, b1_prop_expiredCheck, b2_lastSellTime, b2_lastSellTimeCheck, b2_prop_expired, b2_prop_expiredCheck, file_name))
+
+# Turn df.list into a data file - easier for processing below
+large_df <- do.call(rbind.data.frame, df.list)
+
+# explore exclusion criteria
+exclusion_data <- as.data.frame(cbind(IDs, b1_lastSellTime, b1_lastSellTimeCheck, b1_prop_immature, b1_prop_immatureCheck, b1_prop_expired, b1_prop_expiredCheck, b2_lastSellTime, b2_lastSellTimeCheck, b2_prop_expired, b2_prop_expiredCheck, file_name))
+
+colnames(exclusion_data) <- c("IDs", "b1_lastSellTime", "b1_lastSellTimeCheck", "b1_prop_immature", "b1_prop_immatureCheck", "b1_prop_expired", "b1_prop_expiredCheck", "b2_lastSellTime", "b2_lastSellTimeCheck", "b2_prop_expired", "b2_prop_expiredCheck", "file_name")
+
+exclusion_data$b1_lastSellTimeCheck <- as.numeric(exclusion_data$b1_lastSellTimeCheck)
+exclusion_data$b1_prop_immatureCheck <- as.numeric(exclusion_data$b1_prop_immatureCheck)
+exclusion_data$b1_prop_expiredCheck <- as.numeric(exclusion_data$b1_prop_expiredCheck)
+exclusion_data$b2_lastSellTimeCheck <- as.numeric(exclusion_data$b2_lastSellTimeCheck)
+exclusion_data$b2_prop_expiredCheck <- as.numeric(exclusion_data$b2_prop_expiredCheck)
+
+sum(exclusion_data$b1_lastSellTimeCheck)
+sum(exclusion_data$b1_prop_immatureCheck)
+sum(exclusion_data$b1_prop_expiredCheck)
+
+sum(exclusion_data$b2_lastSellTimeCheck)
+sum(exclusion_data$b2_prop_expiredCheck)
+
+# Exclude using criteria
+exclusion_data <- subset (exclusion_data,
+                          exclusion_data$b1_lastSellTimeCheck == 1 &
+                            exclusion_data$b1_prop_immatureCheck == 1 & 
+                            exclusion_data$b1_prop_expiredCheck == 1 &
+                            exclusion_data$b2_lastSellTimeCheck == 1 &
+                            exclusion_data$b2_prop_expiredCheck == 1)
+
+# number of included data sets
+nrow(exclusion_data)
+
+# exclude participant R_3p4lCKY6Edm6tWY for technical difficulties
+exclusion_data <- subset(exclusion_data, exclusion_data$IDs != "R_3p4lCKY6Edm6tWY")
+
+# preliminary stuff
+allIDs <-  exclusion_data$IDs # included IDs
+n = length(allIDs)
+nblocks <- 2
+
+dataSummary <- droplevels(dataSummary[dataSummary$IDs %in% allIDs, ])
+large_df <- droplevels(large_df[large_df$subject_id %in% allIDs, ])
+
+# Preliminary data visualization
+# distribution of scheduled delays in each block (ECDF) 
+# distribution of scheduled delays in each block (autocorrelation plot)
+# reaction times 
+# trial-by-trial data
+
+# set figure directory
+figDir <- "../output"
+setwd(figDir)
+study <- "2b"
+
+# plot the distribution of scheduled delays in each block (ECDF)
+figName = file.path(sprintf('indivs_n%d_scheduledDelaysECDF.pdf', n)) # adjust ECDF
+pdf(figName, width=6, height=3*n, pointsize=14)
+layout(matrix(1:n, n, 1))
+
+for (id in dataSummary$ID) {
+  
+  data <-  subset(large_df, large_df$subject_id == id)
+  b1_data <- subset(data, n_block == 1)
+  b2_data <- subset(data, n_block == 2)
+  
+  for (b in 1:nblocks){
+    if (b == 1){
+      blockData <- b1_data
+    } else if (b == 2){
+      blockData <- b2_data
+    }
+    
+    scheduledDelaysECDF(blockData, study, id, dataSummary) 
+  }
+}
+dev.off()
+
+# plot the distribution of scheduled delays in each block (ACF)
+figName = file.path(sprintf('indivs_n%d_scheduledDelaysACF.pdf', n)) 
+pdf(figName, width=6, height=3*n, pointsize=14)
+layout(matrix(1:n, n, 1))
+
+for (id in dataSummary$ID) {
+  
+  data <-  subset(large_df, large_df$subject_id == id)
+  b1_data <- subset(data, n_block == 1)
+  b2_data <- subset(data, n_block == 2)
+  
+  for (b in 1:nblocks){
+    if (b == 1){
+      blockData <- b1_data
+    } else if (b == 2){
+      blockData <- b2_data
+    }
+    
+    scheduledDelaysACF(blockData, study, id, dataSummary) 
+  }
+}
+dev.off()
+
+# reaction time plot
+figName = file.path(sprintf('indivs_n%d_RT.pdf', n)) 
+pdf(figName, width=6, height=3*n, pointsize=14)
+layout(matrix(1:n, n, 1))
+
+for (id in dataSummary$ID) {
+  
+  data <-  subset(large_df, large_df$subject_id == id)
+  b1_data <- subset(data, n_block == 1)
+  b2_data <- subset(data, n_block == 2)
+  
+  for (b in 1:nblocks){
+    if (b == 1){
+      blockData <- b1_data
+    } else if (b == 2){
+      blockData <- b2_data
+    }
+    outcomeRT(blockData, study, id, dataSummary)
+  }
+}
+
+dev.off()
+
+# plot trial-by-trial data
+figName = file.path(sprintf('indivs_n%d_trialPlots.pdf', n))
+pdf(figName, width=6, height=3*n, pointsize=14)
+layout(matrix(1:n, n, 1))
+
+for (id in dataSummary$ID) {
+  blockData <-  subset(large_df, large_df$subject_id == id)
+  trialPlots(blockData, study, id, dataSummary)
+}
+
+dev.off()
+
+# survival curve and AUC
+grpAUC = data.frame(rownames=allIDs, IDs=allIDs, bk2=numeric(n),
+                    row.names='rownames', stringsAsFactors=FALSE) # initialize group results
+scGrid = seq(0, 20, by=0.1)
+grpSurvCurves = matrix(nrow=n, ncol=length(scGrid), dimnames=list(dataSummary$ID, scGrid)) # initialize
+figName = file.path(sprintf('indivs_n%d_survivalCurves.pdf', n))
+pdf(figName, width=6, height=3*n, pointsize=14)
+layout(matrix(1:n, n, 1))
+
+for (id in dataSummary$ID) {
+  
+  blockData <-  subset(large_df, large_df$subject_id == id & large_df$n_block == 2 )
+  
+  # calculate kaplan-meier survival curve and area under the curve
+  output <- kmsc(blockData, study, id, dataSummary, scGrid) 
+  
+  grpAUC$AUC[which(grpAUC$IDs == id)] = output$auc 
+  grpSurvCurves[id, ] = output$kmOnGrid
+}
+
+dev.off()
+
+# save group AUC results
+outFileName = file.path(figDir, sprintf('grp_n%d_groupAUC.csv', n))
+write.csv(grpAUC, file=outFileName, row.names=FALSE)
+
+AUCResults <- merge(grpAUC, dataSummary, by.x = "IDs")
+
+#### To exclude participants with AUC smaller than 2.16, use the following few lines
+# AUCResults$smaller216 <- rep(0, nrow(AUCResults))
+# AUCResults$smaller216[which(AUCResults$AUC < 2.16)] <- 1
+# dataSummary$smaller216 <- AUCResults$smaller216
+# dataSummary$AUC <- AUCResults$AUC
+# AUCResults$check <- AUCResults$AUC
+# AUCResults <- subset(AUCResults, AUCResults$smaller216 == 0 )
+  
+table(AUCResults$b1_timingCond)
+nHP <- as.numeric(table(AUCResults$b1_timingCond)[1])
+nLP <- as.numeric(table(AUCResults$b1_timingCond)[2])
+describeBy(AUCResults$AUC, AUCResults$b1_timingCond)
+
+# Bootstrap confidence interval for LP
+CIcongruentLPBoot <- calcCIBoot(AUCResults$AUC[which(AUCResults$b1_timingCond == "LP")])
+CIincongruentHPBoot <- calcCIBoot(AUCResults$AUC[which(AUCResults$b1_timingCond == "HP")])
+
+# LP t-test and Bayes factor
+ttestLP <- t.test(AUCResults$AUC[which(AUCResults$b1_timingCond == "LP")], AUCResults$AUC[which(AUCResults$b1_timingCond == "HP")])
+difinAUCLP <- cohensD(mean(AUCResults$AUC[which(AUCResults$b1_timingCond == "LP")], na.rm = FALSE),
+                      mean(AUCResults$AUC[which(AUCResults$b1_timingCond == "HP")], na.rm = FALSE), 
+                      sd(AUCResults$AUC[which(AUCResults$b1_timingCond == "LP")], na.rm = FALSE), 
+                      sd(AUCResults$AUC[which(AUCResults$b1_timingCond == "HP")], na.rm = FALSE), 
+                      nLP, 
+                      nLP)
+
+jsq::bttestIS(formula = AUC ~ b1_timingCond, data = AUCResults, hypothesis = "oneGreater", desc = TRUE)
+# directional test would check whether LP congruent is lower than LP incongruent
+
+# compare behavior in LP to optimal behavior (selling just after 2.16)
+t.test(AUCResults$AUC[which(AUCResults$b1_timingCond == "LP")], mu = 2.16)
+t.test(AUCResults$AUC[which(AUCResults$b1_timingCond == "HP")], mu = 2.16)
+
+cohdeviation_congruent <- (mean(AUCResults$AUC[which(AUCResults$b1_timingCond == "LP")], na.rm = FALSE) - 2.16) / sd(AUCResults$AUC[which(AUCResults$b1_timingCond == "LP")], na.rm = FALSE) 
+cohdeviation_incongruent <- (mean(AUCResults$AUC[which(AUCResults$b1_timingCond == "HP")], na.rm = FALSE) - 2.16) / sd(AUCResults$AUC[which(AUCResults$b1_timingCond == "HP")], na.rm = FALSE) 
+
+# Mean survival curves by condition 
+# set up colors for group plots
+colLPbk1 <- rgb(225, 0, 0, max = 255, alpha = 125)
+colHPbk1 <- rgb(255,105,180, max = 255, alpha = 125)
+colLPbk1_transp = rgb(225, 0, 0, max = 255, alpha = 70)
+colHPbk1_transp <- rgb(255,105,180, max = 255, alpha = 50)
+colGray = rgb(1/3, 1/3, 1/3)
+
+# Output figure: between-subjects effect in Block 1
+# Block 1 group mean survival curves
+
+figName = file.path(figDir, sprintf('n%d_survivalByCondition.pdf', n))
+pdf(figName, width=6, height=3, pointsize=9)
+layout(matrix(1:2, 1, 2), widths=c(0.6, 0.4))
+
+# figName = file.path(sprintf('n%d_survivalByCondition.tiff', n))
+# tiff(figName, units="in", width=5, height=5, res=300)
+
+LP_ids <- AUCResults$IDs[which(AUCResults$b1_timingCond == "LP")]
+HP_ids <- AUCResults$IDs[which(AUCResults$b1_timingCond == "HP")]
+
+# plot group mean survival curves for block 1 (w/ SEM)
+survCurve_grpMean_LPbk1 = colMeans2(grpSurvCurves[LP_ids, ]) 
+survCurve_grpSEM_LPbk1 = colSds(grpSurvCurves[LP_ids, ]) / sqrt(length(LP_ids))
+survCurve_grpMean_HPbk1 = colMeans2(grpSurvCurves[HP_ids, ]) 
+survCurve_grpSEM_HPbk1 = colSds(grpSurvCurves[HP_ids, ]) / sqrt(length(HP_ids))
+
+plot('', bty='n', xlab='Elapsed time in trial (s)', xlim=c(0,20), xaxp=c(0, 20, 4),
+     ylab='Survival rate', ylim=c(0,1), yaxp=c(0, 1, 2),
+     main='Survival curves by condition', las=1, xaxt='n')
+axis(side = 1, at=seq(0,20, 10), las=1)
+
+errorBand(xData=scGrid, yData=survCurve_grpMean_LPbk1, yErr=survCurve_grpSEM_LPbk1, bandColor=colLPbk1_transp)
+errorBand(xData=scGrid, yData=survCurve_grpMean_HPbk1, yErr=survCurve_grpSEM_HPbk1, bandColor=colHPbk1_transp)
+
+lines(scGrid, survCurve_grpMean_LPbk1, type='l', lwd=3, col=colLPbk1)
+lines(scGrid, survCurve_grpMean_HPbk1, type='l', lwd=3, col=colHPbk1)
+
+# add a legend
+legend('topright', 
+       legend=c('LP congruent', 'LP incongruent'),
+       col=c(colLPbk1, colHPbk1), bty='n', lwd=c(2, 2))
+
+# end figure
+dev.off()
+
+# Block 1 group AUC
+figName = file.path(figDir, sprintf('n%d_survivalBybeeswarm.pdf', n))
+pdf(figName, width=6, height=3, pointsize=9)
+layout(matrix(1:2, 1, 2), widths=c(0.6, 0.4))
+
+# beeswarm+box plot of group AUC results - between-subject effect for block 1
+AUCList = list(
+  bk1LP = AUCResults$AUC[which(AUCResults$b1_timingCond == "LP")],
+  bk1HP = AUCResults$AUC[which(AUCResults$b1_timingCond == "HP")])
+boxplot(AUCList, outline=FALSE, boxwex=0.5, col=c(colLPbk1_transp, colHPbk1_transp),
+        frame.plot=FALSE, boxlty=c('solid', 'dashed'), whisklty='blank', staplelty='blank',
+        boxcol=colGray, medcol=colGray,
+        xlab='Manipulation', ylim=c(0,30), yaxp=c(0, 30, 4), ylab='AUC (s)',
+        main='AUC')
+beeswarm(AUCList, pch=16, col=c(colLPbk1, colHPbk1), bty='n', cex=0.9, spacing=0.9, method='compactswarm',
+         add=TRUE, axes=FALSE)
+
+# end figure
+dev.off()
+
+# WTW time series, across both conditions
+tGrid = 1:600 # Note this this is only 600 seconds
+wtwTS_results = matrix(data=NA, nrow=n, ncol=length(tGrid), dimnames=list(allIDs))
+
+wtwCeiling=20
+
+# "R_2D8h2RTudkW1Iul" sold the last token in block 2 at 600.001, this causes issues in the next calculations, so I will manually set it to 600.
+large_df$n_sell_time_fin[which(large_df$n_sell_time_fin == 600.001)] <- 600
+
+for (id in dataSummary$ID) {
+  blockData <-  subset(large_df, large_df$subject_id == id & large_df$n_block == 2)
+  # calculate willingness to wait time-series
+  wtwTS_results[id, ] <- wtwTS(blockData, tGrid, wtwCeiling)
+}
+
+# plot the mean WTW function by counterbalance group
+tValues = list(1:600)
+# obtain mean and SEM for each counterbalance group
+wtwTS_grpMean = list()
+wtwTS_grpSEM = list()
+
+for (this_cbal in c('HP', 'LP')) {
+  if (this_cbal == "HP"){
+    wtwTS_grpMean[[this_cbal]] = colMeans2(wtwTS_results[HP_ids, ])
+    wtwTS_grpSEM[[this_cbal]] = colSds(wtwTS_results[HP_ids, ])/sqrt(length(HP_ids))  
+  }
+  if (this_cbal == "LP"){
+    wtwTS_grpMean[[this_cbal]] = colMeans2(wtwTS_results[LP_ids, ])
+    wtwTS_grpSEM[[this_cbal]] = colSds(wtwTS_results[LP_ids, ])/sqrt(length(LP_ids))  
+  }
+}
+
+figName = file.path(figDir, sprintf('n%d_wtwByCondition.pdf', n))
+pdf(figName, width=6, height=3, pointsize=9)
+
+# figName = file.path(sprintf('n%d_wtwByCondition.tiff', n))
+# tiff(figName, units="in", width=10, height=5, res=300)
+
+# initialize the plot
+plot('', type='n', xlim=c(0, 600), bty='n', ylim=c(0, 20), yaxp=c(0, 20, 4),
+     xlab='Time elapsed in block (min)', ylab='WTW (s)',
+     main='Local willingness-to-wait estimates', yaxt='n', xaxt='n')
+axis(side = 2, at=seq(0,20, 10), las=1)
+axis(side = 1, at=seq(0, 600, 120), las=1, labels = seq(0, 10, 2))
+
+# add error bands, one block at a time
+errorBand(xData=1:600, yData=wtwTS_grpMean$HP, 
+          yErr=wtwTS_grpSEM$HP, bandColor=colHPbk1_transp)
+errorBand(xData=1:600, yData=wtwTS_grpMean$LP, 
+          yErr=wtwTS_grpSEM$LP, bandColor=colLPbk1_transp)
+
+# add means
+lines(1:600, wtwTS_grpMean$HP, col=colHPbk1, type='l', lwd=2, lty='solid')
+lines(1:600, wtwTS_grpMean$LP, col=colLPbk1, type='l', lwd=2, lty='solid')
+
+# add a legend
+legend('topright', 
+       legend=c('LP congruent', 'LP incongruent'),
+       col=c(colLPbk1, colHPbk1), bty='n', lwd=c(2, 2))
+dev.off()
+
+# regression model predicting WTW per second by seconds elapsed for each individual, then compare coefficients using a t-test
+dataSummary$wtw_trend <- rep(NA, nrow(dataSummary))
+
+for (id in dataSummary$ID) {
+  
+  data <-  subset(large_df, large_df$subject_id == id)
+  
+  wtwTS_vector <- wtwTS_results[id, ]
+  dat <- as.data.frame(cbind(1:600, wtwTS_vector))
+  colnames(dat) <- c("second", "wtw") 
+  
+  model <- lm(wtw ~ second, data = dat) 
+  
+  dataSummary$wtw_trend[which(dataSummary$IDs == id)] <- as.numeric(model$coefficients[2])
+}
+
+describeBy(dataSummary$wtw_trend, dataSummary$b1_timingCond)
+
+# to exclude participants with AUCs under 2.16
+# dataSummary <- subset(dataSummary, dataSummary$smaller216 == 0)
+
+# means
+mean(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "LP")])
+mean(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "HP")])
+
+# Bootstrap confidence interval for LP
+CIcongruentLPBoot <- calcCIBoot(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "LP")])
+CIincongruentLPBoot <- calcCIBoot(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "HP")])
+
+# LP t-test and Bayes factor
+ttestLP <- t.test(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "LP")], dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "HP")])
+difintrendLP <- cohensD(mean(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "LP")], na.rm = FALSE),
+                        mean(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "HP")], na.rm = FALSE), 
+                        sd(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "LP")], na.rm = FALSE), 
+                        sd(dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "HP")], na.rm = FALSE), 
+                        nLP, 
+                        nHP)
+
+jsq::bttestIS(formula = wtw_trend ~ b1_timingCond, data = dataSummary, hypothesis = "oneGreater", desc = TRUE)
+# directional test would check whether LP congruent is lower than LP incongruent
+
+
+figName = file.path(figDir, sprintf('indivs_n%d_coefficients.pdf', n)) 
+pdf(figName, pointsize=14)
+
+coefficientsList = list(
+  LPcongruent = dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "LP")],
+  LPincongruent = dataSummary$wtw_trend[which(dataSummary$b1_timingCond == "HP")])
+boxplot(coefficientsList, outline=FALSE, boxwex=0.5, col=c(colLPbk1_transp, colHPbk1_transp),
+        frame.plot=FALSE, boxlty=c('solid', 'dashed'), whisklty='blank', staplelty='blank',
+        boxcol=colGray, medcol=colGray,
+        xlab='Manipulation', ylim=c(-0.05,0.05), ylab='Coefficient',
+        main='Coefficient: wtw-trend')
+abline(h = 0, lty = 2)
+beeswarm(coefficientsList, pch=16, col=c(colLPbk1_transp, colHPbk1_transp), bty='n', cex=0.9, spacing=0.9, method='compactswarm',
+         add=TRUE, axes=FALSE)
+dev.off()
+
+# Response time analysis
+### Check whether learning occurred in the reaction times during the passive exposure block
+# Analyses restricted to the second half of the block (450 plus seconds) and to trials that lasted less than 20 seconds
+
+large_df$length_delay <- rep(0, nrow(large_df))
+large_df$length_delay[which(as.numeric(large_df$n_scheduled_delay) < 3)] <- "less3"
+large_df$length_delay[which(as.numeric(large_df$n_scheduled_delay) >= 3 & as.numeric(large_df$n_scheduled_delay) < 6)] <- "3to6"
+large_df$length_delay[which(as.numeric(large_df$n_scheduled_delay) >= 6 & as.numeric(large_df$n_scheduled_delay) < 9)] <- "6to9"
+large_df$length_delay[which(as.numeric(large_df$n_scheduled_delay) >= 9 & as.numeric(large_df$n_scheduled_delay) < 15)] <- "9to15"
+large_df$length_delay[which(as.numeric(large_df$n_scheduled_delay) >= 15 & as.numeric(large_df$n_scheduled_delay) <= 20)] <- "15to20"
+large_df$length_delay[which(as.numeric(large_df$n_scheduled_delay) > 20)] <- "exclude"
+
+large_df$copydesignatedWait <- large_df$designatedWait # to check
+
+dflmer <- c()
+for (id in dataSummary$ID) {
+  
+  data <-  subset(large_df, large_df$subject_id == id & large_df$n_block == 1)
+  
+  data$secondHalf <- rep(0, nrow(data))
+  startSecondHalf <- (ceiling(nrow(data)/2)+1)
+  data$secondHalf[startSecondHalf:nrow(data)] <- 1
+  
+  # create DV:The dependent variable is the RT on each trial after subtracting the grand median RT for each participant (across all trials in the first block). 
+  data$medianRT <- rep(median(data$RT, na.rm = TRUE), nrow(data))
+  data$RTMinusMedianRT <- data$RT - data$medianRT
+  
+  dflmer <- rbind(dflmer, data)
+}
+
+dflmer$n_time_waited_fin <- as.numeric(dflmer$n_time_waited_fin)
+dflmer$n_RTMinusMedianRT <- as.numeric(dflmer$RTMinusMedianRT)
+dflmer$n_scheduled_delay <- as.numeric(dflmer$n_scheduled_delay)
+
+# only use second half for analysis
+dflmer_incl <- subset (dflmer, dflmer$secondHalf == 1 & dflmer$n_scheduled_delay <= 20)
+dflmer <- dflmer_incl
+
+# Participants who experienced HP in block 1
+dflmer_HP <- subset(dflmer, dflmer$f_timing_condition == "HP")
+dflmer_LP <- subset(dflmer, dflmer$f_timing_condition == "LP")
+
+# Model
+model_HP <- lmer(n_RTMinusMedianRT ~ n_scheduled_delay + (1 + n_scheduled_delay | subject_id), data =  dflmer_HP, control = lmerControl(optimizer = c("bobyqa")))
+summary(model_HP)
+model_LP <- lmer(n_RTMinusMedianRT ~ n_scheduled_delay + (1 + n_scheduled_delay | subject_id), data =  dflmer_LP, control = lmerControl(optimizer = c("bobyqa")))
+summary(model_LP)
+
+# CIs around the beta estimates
+upperCIHP <- -0.0036053 + 1.96 * 0.0003063
+lowerCIHP <- -0.0036053 - 1.96 * 0.0003063
+
+upperCILP <- -0.0006384 + 1.96 * 0.0003118
+lowerCILP <- -0.0006384 - 1.96 * 0.0003118
+
+# Plot mean reaction times (on y-axis) by token maturation time during the second half of the passive exposure block
+# Derive mean per person per delay category
+sum_data <- aggregate(n_RTMinusMedianRT ~ length_delay + subject_id, dflmer, mean, na.rm = TRUE)
+sd_data <- aggregate(n_RTMinusMedianRT ~ length_delay + subject_id, dflmer, sd, na.rm = TRUE)
+combined_data <- cbind(sum_data, sd_data$n_RTMinusMedianRT)
+colnames(combined_data) <- c("delay", "ID", "mean", "sd")
+combined_data$f_delay <- factor(combined_data$delay, ordered = TRUE, 
+                                levels = c("less3","3to6", "6to9", "9to15", "15to20"))
+# Add condition
+cond <-  rep(dataSummary$b1_timingCond, each=5)
+
+# IDs with less information (gotta make sure this works once we have more participants):
+df_table <- as.data.frame(table(combined_data$ID))
+lessthan5 <- which(df_table$Freq != 5)
+condFin <- cond[-(lessthan5 * 5)]
+combined_data$b1_cond <- condFin
+
+# Mean and SD across participants per condition and delat
+plot_data <- aggregate(mean ~ f_delay + b1_cond, combined_data, mean, na.rm = TRUE)
+sd_data_grouped <- aggregate(mean ~ f_delay + b1_cond, combined_data, sd, na.rm = TRUE)
+sd_data_grouped$SEM <- rep(NA, dim = c(1, nrow(sd_data_grouped)))
+sd_data_grouped$SEM[which(sd_data_grouped$b1_cond == "HP")] <- sd_data_grouped$mean[which(sd_data_grouped$b1_cond == "HP")]/sqrt(nHP)
+sd_data_grouped$SEM[which(sd_data_grouped$b1_cond == "LP")] <- sd_data_grouped$mean[which(sd_data_grouped$b1_cond == "LP")]/sqrt(nLP)
+
+
+plot_data$SEM <- sd_data_grouped$SEM
+
+plot_data$Condition <- plot_data$b1_cond
+
+plot_data$Condition[which(plot_data$Condition == "HP")] <- "HP condition"
+plot_data$Condition[which(plot_data$Condition == "LP")] <- "LP condition"
+
+figName = file.path(figDir, sprintf('n%d_RTplot.pdf', n)) 
+pdf(figName, pointsize=14)
+
+# figName = file.path(sprintf('n%d_RT.tiff', n))
+# tiff(figName, units="in", width=7.5, height=5, res=300)
+
+ggplot(data = plot_data, aes(x = f_delay, y = mean, colour = b1_cond, group = b1_cond)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=mean-SEM, ymax=mean+SEM), color = "grey", width = 0.2) +
+  geom_line() +
+  scale_color_manual(values=c("blue" ,"red")) +
+  xlab("Token maturation time") +
+  ylab("Mean RTs (s)") +
+  ggtitle("Reaction times in passive block (Second half)") +
+  theme(plot.title = element_text(hjust = 0.5)) +
+  theme(legend.position = c(0.85, 0.85)) +
+  scale_x_discrete(labels=c("less3" = "< 3", "3to6" = "3-6", "6to9" = "6-9",  "9to15" = "9-15", "15to20" = "15-20")) +
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position = c(0.8, 0.8),
+    legend.text = element_text(size = 16),
+    legend.margin = margin(t = 5, l = 5, r = 5, b = 5),
+    legend.key = element_rect(color = NA, fill = NA),
+    plot.margin = unit(c(1, 1, 1, 1), "cm"),
+    plot.title = element_text(size = 16,
+                              hjust = 0.5,
+                              margin = margin(b = 16)),
+    axis.line = element_line(color = "black", size = .5),
+    axis.title = element_text(size = 16, color = "black"),
+    axis.text = element_text(size = 16, color = "black"),
+    axis.text.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10)),
+    axis.ticks = element_line(size = .5)
+  ) +
+  labs(colour = "")
+
+dev.off()
+

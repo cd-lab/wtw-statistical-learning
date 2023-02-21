@@ -1,0 +1,280 @@
+<!-- /*
+* working experiment
+*/ -->
+
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Decision Making Experiment</title>
+    <!--scripts loaded for the local PC-->
+    <script type="text/javascript" src="jspsych/jspsych.js"></script>
+    <link rel="stylesheet" type="text/css" href="jspsych/css/jspsych.css"/>
+    <script src="jspsych/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="jspsych/plugins/jspsych-image-keyboard-response.js"></script>
+    <script src="jspsych/plugins/jspsych-call-function.js"></script>
+    <script type="text/javascript" src="jspsych/plugins/jspsych-html-keyboard-response.js"></script>
+
+    <script type="text/javascript" src="jspsych/plugins/jspsych-html-keyboard-response.js"></script>
+    <script type="text/javascript" src="jspsych/plugins/jspsych-survey-text.js"></script>
+    <script type="text/javascript" src="jspsych/plugins/jspsych-survey-multi-choice.js"></script>
+    <script type="text/javascript" src="jspsych/plugins/jspsych-fullscreen.js"></script>
+
+
+
+    <!--packages always loaded-->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+    <link href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/themes/black-tie/jquery-ui.min.css" rel="stylesheet" type="text/css"></link>
+    <!--customized packages always loaded-->
+    <link rel="stylesheet" type="text/css" href="wtw/wtw.css"/>
+    <script src="wtw/wtw-standard-discrete-prac.js"></script>
+    <script src="wtw/wtw-standard-discrete-block.js"></script>
+    <script src="wtw/instructions.js"></script>
+    <script src="wtw/instructions_text.js"></script>
+  </head>
+  <body></body>
+  <p id = "demo"></p>
+  <script>
+    // for in-person experiments, ask experimenters to enter experimental info
+    var id_prompt = {
+      type: 'survey-text',
+      questions: [
+        {prompt: "Participant ID"}
+      ]
+    };
+
+    var cb = "discrete"
+    var completionId = 34543
+
+    // change color settings
+    var change_colors = {
+      type: 'call-function',
+      func: function(){
+        $('.jspsych-display-element').css('background-color', 'grey')
+        $('.jspsych-display-element').css('color', 'white')
+      }
+    }
+
+    // instructions1
+    var instructions_1 = {
+      type: "instructions",
+      pages: [standard_instructions_1a_text, standard_instructions_1b_text], // loaded from wtw/instructions_text.js
+      key_forward: "j",
+      key_backward: "f",
+      show_clickable_nav: true
+    }
+
+    // practice_1_a
+    var practice_1 = {
+      type: 'wtw-standard-discrete-prac',
+      scheduled_delay: 10000,
+      trial_id: 'prac_1',
+      maturation_value: 3,
+      instruction: "mature",
+      iti: 500
+    }
+
+    var instructions_2 = {
+      type: "instructions",
+      pages: [standard_instructions_2_text], // loaded from wtw/instructions_text.js
+      key_forward: "j",
+      key_backward: "f",
+      show_clickable_nav: true,
+    }
+
+    // practice_2
+    var practice_2 = {
+      type: 'wtw-standard-discrete-prac',
+      scheduled_delay: 10000,
+      trial_id: 'prac_2',
+      maturation_value: 3,
+      instruction: "mature",
+      iti: 500
+    }
+
+    var instructions_3 = {
+      type: "instructions",
+      pages: [instructions_3_text],  // loaded from wtw/instructions_text.js
+      key_forward: "j",
+      key_backward: "f",
+      show_clickable_nav: true,
+    }
+
+    // practice_3
+    var practice_3 = {
+      type: 'wtw-standard-discrete-prac',
+      scheduled_delay: 10000,
+      trial_id: 'prac_3',
+      maturation_value: 3,
+      instruction: "immature",
+      iti: 500
+    }
+
+    // instructions 4
+    var instructions_4 = {
+      type: "instructions",
+      pages: [instructions_4_text], // loaded from wtw/instructions_text.js
+      key_forward: "j",
+      key_backward: "f",
+      show_clickable_nav: true,
+    }
+
+    // practice_4
+    var practice_4 = {
+      type: 'wtw-standard-discrete-prac',
+      scheduled_delay: 10000,
+      trial_id: 'prac_4',
+      maturation_value: 3,
+      instruction: "immature",
+      iti: 500
+    }
+
+
+    if (cb == "standard"){
+      var instructions_bar = {
+        type: "instructions",
+        pages: [standard_instructions_bar],
+        key_forward: "j",
+        key_backward: "f",
+        show_clickable_nav: true
+      }
+    }
+
+    if (cb == "discrete"){
+      var instructions_bar = {
+        type: "instructions",
+        pages: [discrete_instructions_bar],
+        key_forward: "j",
+        key_backward: "f",
+        show_clickable_nav: true
+      }
+    }
+
+
+    var instructions_5 = {
+      type: "instructions",
+      pages: [instructions_5_text], // loaded from wtw/instructions_text.js
+      key_forward: "j",
+      key_backward: "f",
+      show_clickable_nav: true,
+    }
+
+    var mid_quit_warning = {
+      type: "instructions",
+      pages: [mid_quit_warning_text], // loaded from wtw/instructions_text.js
+      key_forward: "j",
+      key_backward: "f",
+      show_clickable_nav: true,
+      on_finish: function(){
+        window.addEventListener('beforeunload', quit_midway_save);
+      }
+    }
+
+    var enter_fullscreen = {
+      type: 'fullscreen',
+      fullscreen_mode: true,
+      message: '<p style="color: white; font-size: 30px; line-height: 2">Please click "Next" to enable full screen mode and start the game.</p>' +
+      '<p style="color: white; font-size: 30px; line-height: 2">You will automatically exit full screen mode when this task block ends.</p>',
+      button_label: 'Next'
+    }
+
+    var exit_fullscreen = {
+      type: 'fullscreen',
+      fullscreen_mode: false,
+      delay_after: 0
+    }
+
+
+    // HP block
+    var wtw_LP_block = {
+        type: "wtw-standard-discrete-block",
+        condition: "LP",
+        block_time: 15 * 60 * 10,
+        maturation_value: 3,
+        iti: 500,
+        cb: cb,
+        on_finish:function(){
+          // jsPsych.data.displayData();
+          var tmp = JSON.parse(jsPsych.data.get().filter({trial_type: 'survey-text'}).select("responses").values);
+          var id = tmp['Q0']
+          var today = new Date();
+          var dd = String(today.getDate()).padStart(2, '0');
+          var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+          var yyyy = today.getFullYear();
+          today = yyyy + "-" + mm + "-" + dd;
+          jsPsych.data.get().localSave('csv', `wtw_local-raw_${id}_${today}.csv`);
+          window.removeEventListener('beforeunload', quit_midway_save)
+        }
+    }
+
+    // debriefing
+    var debriefing = {
+      type: "instructions",
+      pages: function(){
+          var earnObj = jsPsych.data.get().filter({trial_type: 'wtw-standard-discrete-block'}).select('totalEarnings')
+          var earnings = earnObj.values[0] // which is an array
+          if(earnObj.values[0].length  == 0){
+            return(['<p style="color: white; font-size: 30px; line-height: 2">You earned a bonus of 0 $ in this decision-making game. </p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">Click "Next" to save your data.</p>'])
+          }else{
+            var earningsCount = (earnings[earnings.length - 1]) / 100
+            var earningsCountToDisplay = earningsCount.toFixed(2);
+            console.log(earnings[earnings.length - 1]/100)
+            return(['<p style="color: white; font-size: 30px; line-height: 2">You earned a bonus of $' + earningsCountToDisplay +
+        ' in this decision-making game. </p>' +
+        '<p style="color: white; font-size: 30px; line-height: 2">Click "Next" to save your data.</p>'])
+          }
+      },
+      key_forward: "j",
+      key_backward: "f",
+      button_label_next: "Next",
+      show_clickable_nav: true
+    }
+
+    // if leave the page middleway, save the data.
+    var quit_midway_save = function (e) {
+        e.preventDefault();
+        e.returnValue = '';
+        // jsPsych.data.displayData();
+        var tmp = JSON.parse(jsPsych.data.get().filter({trial_type: 'survey-text'}).select("responses").values);
+        var id = tmp['Q0']
+        var today = new Date();
+        var dd = String(today.getDate()).padStart(2, '0');
+        var mm = String(today.getMonth() + 1).padStart(2, '0'); //January is 0!
+        var yyyy = today.getFullYear();
+        today = yyyy + "-" + mm + "-" + dd;
+        jsPsych.data.get().localSave('csv', `wtw_local-raw_${id}_${today}.csv`); // the name of the file should include
+    }
+
+    /* start the experiment */
+    jsPsych.init({
+      timeline: [change_colors, id_prompt, instructions_1, practice_1, instructions_2, practice_2, instructions_3, practice_3, instructions_4, practice_4, instructions_bar, instructions_5, mid_quit_warning, enter_fullscreen, wtw_LP_block, exit_fullscreen, debriefing],
+      //timeline: [change_colors, id_prompt, mid_quit_warning, enter_fullscreen, wtw_LP_block, exit_fullscreen, debriefing],
+
+      on_interaction_data_update: function(data) {
+        console.log(JSON.stringify(data))
+        if (JSON.stringify(data)[21] == "x"){ // if the 21st element is 21, then it is a fullscreenexit
+          jsPsych.data.addProperties({
+            fullscreenExitIndex: JSON.stringify(data)
+          })
+        }
+
+        if (JSON.stringify(data)[21] == "n"){ // if the 21st element is 21, then it is a fullscreenenter
+          jsPsych.data.addProperties({
+            fullscreenEnterIndex: JSON.stringify(data)
+          })
+        }
+
+      },
+
+      on_finish:function (){
+        document.body.innerHTML = '<p style="color: white; font-size: 30px; line-height: 2"> Saving data now...Please Do not close the tab.</p>'
+        setTimeout(function(){document.body.innerHTML =
+          '<p style="color: white; font-size: 30px; line-height: 2"> Data successfully saved.  You can close the tab now.</p>'}, 5000)
+
+      }
+    });
+
+  </script>
+</html>

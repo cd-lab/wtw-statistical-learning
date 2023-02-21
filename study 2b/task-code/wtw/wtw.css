@@ -1,0 +1,382 @@
+/*
+ * CSS for the wtw task
+ *
+ */
+
+ @import url(https://fonts.googleapis.com/css?family=Open+helvetica:400italic,700italic,400,700);
+
+/*
+ * PLUGIN: jspsych-wtw-trial
+ */
+#jspsych-wtw-content {
+  position: relative;
+}
+
+
+#jspsych-wtw-token {
+  width: 250px;
+  height: 250px;
+  border-radius:250px;
+  border:2.5px solid grey;
+  -webkit-border-radius: 250px;
+  -moz-border-radius: 250px;
+  border-radius: 250px;
+  background: 250px;
+  font-family: helvetica;
+}
+
+/*#jspsych-wtw-HP-immature-token {
+  width: 300px;
+  height: 300px;
+  border-radius:300px;
+  border:3px solid white;
+  -webkit-border-radius: 300px;
+  -moz-border-radius: 300px;
+  border-radius: 300px;
+  background: Green;
+}
+
+#jspsych-wtw-LP-immature-token {
+  width: 300px;
+  height: 300px;
+  border-radius:300px;
+  border:3px solid white;
+  -webkit-border-radius: 300px;
+  -moz-border-radius: 300px;
+  border-radius: 300px;
+  background: #7D3C98;
+}
+
+#jspsych-wtw-HP-mature-token {
+  width: 300px;
+  height: 300px;
+  border-radius:300px;
+  border:3px solid white;
+  -webkit-border-radius: 300px;
+  -moz-border-radius: 300px;
+  border-radius: 300px;
+  background: #a4d246;
+}
+
+#jspsych-wtw-LP-mature-token {
+  width: 300px;
+  height: 300px;
+  border-radius:300px;
+  border:3px solid white;
+  -webkit-border-radius: 300px;
+  -moz-border-radius: 300px;
+  border-radius: 300px;
+  background: #CCCCFF;
+}
+*/
+
+#jspsych-wtw-cent-text {
+  position: absolute;
+  bottom: 112px;
+  right: 60px;
+  color: white;
+  font-size: 100px;
+  text-align: center;
+  font-family: helvetica;
+}
+
+#jspsych-wtw-sold-text {
+  position: absolute;
+  bottom: 112px;
+  right: -50px;
+  color: red;
+  font-size: 150px;
+  text-align: center;
+  font-family: helvetica;
+}
+
+#jspsych-wtw-expired-text {
+  position: absolute;
+  bottom: 112px;
+  right: -200px;
+  color: red;
+  font-size: 150px;
+  text-align: center;
+  font-family: helvetica;
+}
+
+#jspsych-wtw-too-early-text {
+  position: absolute;
+  bottom: 300px;
+  right: -60px;
+  color: white;
+  font-size: 80px;
+  text-align: center;
+  white-space: nowrap;
+  font-family: helvetica;
+}
+
+
+#jspsych-wtw-too-early-text {
+  position: absolute;
+  bottom: 300px;
+  right: -60px;
+  color: white;
+  font-size: 80px;
+  text-align: center;
+  white-space: nowrap;
+  font-family: helvetica;
+}
+
+#jspsych-wtw-too-early-grey-text {
+  position: absolute;
+  bottom: 300px;
+  right: -60px;
+  color: grey;
+  font-size: 80px;
+  text-align: center;
+  white-space: nowrap;
+  font-family: helvetica;
+}
+
+
+/*#jspsych-wtw-ready-text {
+  position: absolute;
+  bottom: 400px;
+  right: 0px;
+  color: white;
+  font-size: 35px;
+  text-align: center;
+/*#}
+
+/*#jspsych-wtw-10cent-text {
+  position: absolute;
+  bottom: 145px;
+  right: 55px;
+  color: white;
+  font-size: 120px;
+  text-align: center;
+}
+
+#jspsych-wtw-0cent-text {
+  position: absolute;
+  bottom: 145px;
+  right: 80px;
+  color: white;
+  font-size: 120px;
+  text-align: center;
+}
+
+
+/*#jspsych-wtw-total-back{
+  width: 300px;
+  height: 300px;
+  border-radius:300px;
+  border:3px solid grey ;
+  -webkit-border-radius: 300px;
+  -moz-border-radius: 300px;
+  border-radius: 300px;
+  background: Grey;
+}*/
+
+#jspsych-wtw-total {
+  position: absolute;
+  width: 500px;
+  height: 80px;
+  bottom: -220px;
+  right: -100px;
+  color: white;
+  font-size: 30px;
+  text-align: center;
+  font-family: helvetica;
+}
+
+#jspsych-wtw-left-time {
+  position: absolute;
+  width: 500px;
+  height: 80px;
+  bottom: -280px;
+  right: -100px;
+  color: white;
+  font-size: 30px;
+  text-align: center;
+  font-family: helvetica;
+}
+
+#jspsych-wtw-progress {
+  position: absolute;
+  border-width: 4px;
+  border-style: solid;
+  border-color: black;
+  width: 200%;
+  height: 30px;
+  bottom: -100px;
+  left: -51.5%;
+  background-color: grey;
+  font-family: helvetica;
+}
+
+#jspsych-wtw-empty-progress {
+  position: absolute;
+  border-width: 4px;
+  border-style: solid;
+  border-color: black;
+  width: 200%;
+  height: 30px;
+  bottom: -100px;
+  left: -51.5%;
+  background: transparent;
+  font-family: helvetica;
+}
+
+
+/*#jspsych-wtw-trial-timer {
+  position: absolute;
+  width: 1%;
+  height: 30px;
+  bottom: -97px;
+  left: 0%;
+  background-color: white;
+}*/
+
+/*#jspsych-wtw-trial-timer-head {
+  position: absolute;
+  width: 2%;
+  height: 40px;
+  bottom: -103px;
+  left: 0%;
+  background-color: black;
+}*/
+
+
+#jspsych-wtw-bar {
+  position: absolute;
+  width: 1%;
+  height: 30px;
+  bottom: -96px;
+  left: -50%;
+  background-color: white;
+  font-family: helvetica;
+}
+
+
+/* Manually add the bars for indicating possible rewards
+the full bar represents 32 seconds and spans 200 pixels
+0.264713485566566, 0.661783713916415,
+                    1.257389056441189, 2.150797070228350,
+                    3.490909090909091, 5.501077121930202,
+                    8.516329168461869, 13.039207238259371,
+                    19.823524342955622, 30.000000000000000
+}*/
+
+#jspsych-wtw-bar-info1 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: -48.34554%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info2 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: -45.86385%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info3 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: -42.14132%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info4 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: -36.55752%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info5 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: -28.18182%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info6 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: -15.61827%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info7 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: 3.227057%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info8 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: 31.49505%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info9 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: 73.89703%;
+  background-color: black;
+}
+
+#jspsych-wtw-bar-info10 {
+  position: absolute;
+  z-index: 1;
+  width: 0.75%;
+  height: 50px;
+  bottom: -106px;
+  left: 137.5%;
+  background-color: black;
+}
+
+/*
+  height: 30px;
+  bottom: -96px;
+}*/
+
+#button {
+  background-color: "grey";
+  border: 1px;
+  color: black;
+  padding: 10px 16px;
+  border-radius: 5px;
+  text-align: center;
+  text-decoration: none;
+  display: inline-block;
+  font-size: 16px;
+}
