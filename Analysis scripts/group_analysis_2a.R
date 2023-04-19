@@ -19,6 +19,7 @@ library("BayesFactor")
 library("lmerTest")
 library("boot")
 library("jsq")
+library("dplyr")
 
 # Set data directory
 dataDir <- "../study 2a/data"
@@ -72,7 +73,7 @@ for (d in unique(trialData$ID)){
   b2_data <- subset(data, blockNum == 2)
   
   IDs <- c(IDs, as.character (header$id))
- 
+  
   b1_numTrials <- c(b1_numTrials, max(as.numeric(b1_data$trialNum)))
   b2_numTrials <- c(b2_numTrials, max(as.numeric(b2_data$trialNum)))
   
@@ -113,11 +114,11 @@ for (d in unique(trialData$ID)){
   
   b1_prop_expired <- c(b1_prop_expired, b1numExpiredTokens/b1numMaturedTokens)
   b2_prop_expired <- c(b2_prop_expired, b2numExpiredTokens/b2numMaturedTokens)
-
+  
   earnings <- c(earnings, max(as.numeric(data$totalEarned)))
   file_name <- c(file_name, as.character(header$dfname))
   maxScheduledDelay <- c(maxScheduledDelay, max(as.numeric(data$designatedWait)))
-
+  
   # add RT
   data$RT <- as.numeric(data$latency) - as.numeric(data$rwdOnsetTime)  
   data$ID <- rep(as.character(header$id), nrow(data))
@@ -256,7 +257,7 @@ for (id in dataSummary$ID) {
   
   grpAUC$AUC[which(grpAUC$IDs == id)] = output$auc 
   grpSurvCurves[id, ] = output$kmOnGrid
-
+  
 }
 dev.off()
 
@@ -558,11 +559,11 @@ etaSquared(wtw_trendanova)
 # HP t-test and Bayes factor
 ttestHP <- t.test(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPcongruent")], dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPincongruent")])
 difintrendHP <- cohensD(mean(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPcongruent")], na.rm = FALSE),
-                      mean(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPincongruent")], na.rm = FALSE), 
-                      sd(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPcongruent")], na.rm = FALSE), 
-                      sd(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPincongruent")], na.rm = FALSE), 
-                      20, 
-                      20)
+                        mean(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPincongruent")], na.rm = FALSE), 
+                        sd(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPcongruent")], na.rm = FALSE), 
+                        sd(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "HPincongruent")], na.rm = FALSE), 
+                        20, 
+                        20)
 
 jsq::bttestIS(formula = wtw_trend ~ cbalAsFactor, data = dataSummaryHP, hypothesis = "oneGreater", desc = TRUE)
 # HP congruent is higher than HP incongruent
@@ -570,11 +571,11 @@ jsq::bttestIS(formula = wtw_trend ~ cbalAsFactor, data = dataSummaryHP, hypothes
 # LP t-test and Bayes factor
 ttestLP <- t.test(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPcongruent")], dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPincongruent")])
 difintrendLP <- cohensD(mean(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPcongruent")], na.rm = FALSE),
-                      mean(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPincongruent")], na.rm = FALSE), 
-                      sd(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPcongruent")], na.rm = FALSE), 
-                      sd(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPincongruent")], na.rm = FALSE), 
-                      20, 
-                      22)
+                        mean(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPincongruent")], na.rm = FALSE), 
+                        sd(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPcongruent")], na.rm = FALSE), 
+                        sd(dataSummary$wtw_trend[which(dataSummary$cbalAsFactor == "LPincongruent")], na.rm = FALSE), 
+                        20, 
+                        22)
 
 jsq::bttestIS(formula = wtw_trend ~ cbalAsFactor, data = dataSummaryLP, hypothesis = "twoGreater", desc = TRUE)
 # LP congruent is less than LP incongruent
@@ -617,11 +618,11 @@ dflmer <- c()
 for (id in dataSummary$ID) {
   
   data <-  subset(large_df, large_df$ID == id & large_df$blockNum == 1)
-
+  
   data$secondHalf <- rep(0, nrow(data))
   startSecondHalf <- (ceiling(nrow(data)/2)+1)
   data$secondHalf[startSecondHalf:nrow(data)] <- 1
-
+  
   # create DV:The dependent variable is the RT on each trial after subtracting the grand median RT for each participant (across all trials in the first block). 
   data$medianRT <- rep(median(data$RT, na.rm = TRUE), nrow(data))
   data$RTMinusMedianRT <- data$RT - data$medianRT
@@ -656,32 +657,29 @@ lowerCILP <- 0.001739 - 1.96 * 0.000393
 
 # Plot mean reaction times (on y-axis) by token maturation time during the second half of the passive exposure block
 # Derive mean per person per delay category
-sum_data <- aggregate(n_RTMinusMedianRT ~ length_delay + ID, dflmer, mean, na.rm = TRUE)
-sd_data <- aggregate(n_RTMinusMedianRT ~ length_delay + ID, dflmer, sd, na.rm = TRUE)
-combined_data <- cbind(sum_data, sd_data$n_RTMinusMedianRT)
-colnames(combined_data) <- c("delay", "ID", "mean", "sd")
-combined_data$f_delay <- factor(combined_data$delay, ordered = TRUE, 
-                                  levels = c("less3","3to6", "6to9", "9to15", "15to20"))
+summary_file <- dflmer %>% group_by(ID, length_delay) %>%
+  summarise(meanRTperPerson=mean(RTMinusMedianRT, na.rm = T))
 
-# Add condition 
-combined_data$b1_cond <-  rep(dataSummary$b1_timingCond, each=5)
+addCondition <- select(dataSummary, IDs, b1_timingCond)
+colnames(addCondition) <- c('ID', 'cond')
 
-# Mean and SD across participants per condition and delat
-plot_data <- aggregate(mean ~ f_delay + b1_cond, combined_data, mean, na.rm = TRUE)
-sd_data_grouped <- aggregate(mean ~ f_delay + b1_cond, combined_data, sd, na.rm = TRUE)
-sd_data_grouped$SEM <- rep(NA, dim = c(1, nrow(sd_data_grouped)))
-sd_data_grouped$SEM[which(sd_data_grouped$b1_cond == "HP")] <- sd_data_grouped$mean[which(sd_data_grouped$b1_cond == "HP")]/sqrt(42)
-sd_data_grouped$SEM[which(sd_data_grouped$b1_cond == "LP")] <- sd_data_grouped$mean[which(sd_data_grouped$b1_cond == "LP")]/sqrt(40)
+summaryFileWithCondition <- merge(addCondition, summary_file )
+
+plottingFile <- summaryFileWithCondition %>% group_by(length_delay, cond) %>%
+  summarise(meanPerDelayByGroup=mean(meanRTperPerson, na.rm = T), 
+            sdPerDelayByGroup = sd(meanRTperPerson, na.rm = T))
+
+plottingFile$semPerDelayByGroup <- rep(NA, nrow(plottingFile))
+
+plottingFile$semPerDelayByGroup[which(plottingFile$cond == "HP")] <- plottingFile$sdPerDelayByGroup[which(plottingFile$cond == "HP")] / sqrt(42)
+plottingFile$semPerDelayByGroup[which(plottingFile$cond == "LP")] <- plottingFile$sdPerDelayByGroup[which(plottingFile$cond == "LP")] / sqrt(40)
 
 # 42 participants in HP block 1 (20 in HP congruent and 22 in LP incongruent)
 # 40 participants in LP block 1 (20 in LP congruent and 20 in HP incongruent)
-  
-plot_data$SEM <- sd_data_grouped$SEM
- 
-plot_data$Condition <- plot_data$b1_cond
 
-plot_data$Condition[which(plot_data$Condition == "HP")] <- "HP condition"
-plot_data$Condition[which(plot_data$Condition == "LP")] <- "LP condition"
+plottingFile <- as.data.frame(plottingFile)
+plottingFile$f_delay <- factor(plottingFile$length_delay, ordered = TRUE, 
+                               levels = c("less3","3to6", "6to9", "9to15", "15to20"))
 
 figName = file.path(figDir, sprintf('n%d_RTplot.pdf', n)) 
 pdf(figName, pointsize=14)
@@ -689,9 +687,9 @@ pdf(figName, pointsize=14)
 # figName = file.path(sprintf('n%d_RT.tiff', n))
 # tiff(figName, units="in", width=7.5, height=5, res=300)
 
-ggplot(data = plot_data, aes(x = f_delay, y = mean, colour = Condition, group = Condition)) +
+ggplot(data = plottingFile, aes(x = f_delay, y = meanPerDelayByGroup, colour = cond, group = cond)) +
   geom_point() +
-  geom_errorbar(aes(ymin=mean-SEM, ymax=mean+SEM), color = "grey", width = 0.2) +
+  geom_errorbar(aes(ymin=meanPerDelayByGroup-semPerDelayByGroup, ymax=meanPerDelayByGroup+semPerDelayByGroup), color = "grey", width = 0.2) +
   geom_line() +
   scale_color_manual(values=c("blue" ,"red")) +
   xlab("Token maturation time") +
@@ -701,26 +699,26 @@ ggplot(data = plot_data, aes(x = f_delay, y = mean, colour = Condition, group = 
   theme(legend.position = c(0.85, 0.85)) +
   scale_x_discrete(labels=c("less3" = "< 3", "3to6" = "3-6", "6to9" = "6-9",  "9to15" = "9-15", "15to20" = "15-20")) +
   theme(
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank(), 
-        legend.position = c(0.8, 0.8),
-        legend.text = element_text(size = 16),
-        legend.margin = margin(t = 5, l = 5, r = 5, b = 5),
-        legend.key = element_rect(color = NA, fill = NA),
-        plot.margin = unit(c(1, 1, 1, 1), "cm"),
-        plot.title = element_text(size = 16,
-                                  hjust = 0.5,
-                                  margin = margin(b = 16)),
-        axis.line = element_line(color = "black", size = .5),
-        axis.title = element_text(size = 16, color = "black"),
-        axis.text = element_text(size = 16, color = "black"),
-        axis.text.x = element_text(margin = margin(t = 10)),
-        axis.title.y = element_text(margin = margin(r = 10)),
-        axis.ticks = element_line(size = .5)
-        ) +
-    labs(colour = "")
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    panel.border = element_blank(),
+    panel.background = element_blank(), 
+    legend.position = c(0.8, 0.8),
+    legend.text = element_text(size = 16),
+    legend.margin = margin(t = 5, l = 5, r = 5, b = 5),
+    legend.key = element_rect(color = NA, fill = NA),
+    plot.margin = unit(c(1, 1, 1, 1), "cm"),
+    plot.title = element_text(size = 16,
+                              hjust = 0.5,
+                              margin = margin(b = 16)),
+    axis.line = element_line(color = "black", size = .5),
+    axis.title = element_text(size = 16, color = "black"),
+    axis.text = element_text(size = 16, color = "black"),
+    axis.text.x = element_text(margin = margin(t = 10)),
+    axis.title.y = element_text(margin = margin(r = 10)),
+    axis.ticks = element_line(size = .5)
+  ) +
+  labs(colour = "") 
 
 dev.off()
 

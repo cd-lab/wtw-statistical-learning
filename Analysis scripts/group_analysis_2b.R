@@ -136,7 +136,7 @@ for (d in 1:length(df.list)){
       count_keypress <- c(count_keypress, 1)
     }
   }
- 
+  
   b1_prop_immature <- c(b1_prop_immature, sum(count_keypress)/nrow(b1_data))
   
   if(b1_prop_immature[d] > 0.2){
@@ -346,7 +346,7 @@ AUCResults <- merge(grpAUC, dataSummary, by.x = "IDs")
 # dataSummary$AUC <- AUCResults$AUC
 # AUCResults$check <- AUCResults$AUC
 # AUCResults <- subset(AUCResults, AUCResults$smaller216 == 0 )
-  
+
 table(AUCResults$b1_timingCond)
 nHP <- as.numeric(table(AUCResults$b1_timingCond)[1])
 nLP <- as.numeric(table(AUCResults$b1_timingCond)[2])
@@ -585,6 +585,8 @@ for (id in dataSummary$ID) {
   
   # create DV:The dependent variable is the RT on each trial after subtracting the grand median RT for each participant (across all trials in the first block). 
   data$medianRT <- rep(median(data$RT, na.rm = TRUE), nrow(data))
+  data$meanRT <- rep(mean(data$RT, na.rm = TRUE), nrow(data))
+  
   data$RTMinusMedianRT <- data$RT - data$medianRT
   
   dflmer <- rbind(dflmer, data)
@@ -617,35 +619,22 @@ lowerCILP <- -0.0006384 - 1.96 * 0.0003118
 
 # Plot mean reaction times (on y-axis) by token maturation time during the second half of the passive exposure block
 # Derive mean per person per delay category
-sum_data <- aggregate(n_RTMinusMedianRT ~ length_delay + subject_id, dflmer, mean, na.rm = TRUE)
-sd_data <- aggregate(n_RTMinusMedianRT ~ length_delay + subject_id, dflmer, sd, na.rm = TRUE)
-combined_data <- cbind(sum_data, sd_data$n_RTMinusMedianRT)
-colnames(combined_data) <- c("delay", "ID", "mean", "sd")
-combined_data$f_delay <- factor(combined_data$delay, ordered = TRUE, 
-                                levels = c("less3","3to6", "6to9", "9to15", "15to20"))
-# Add condition
-cond <-  rep(dataSummary$b1_timingCond, each=5)
+summary_file <- dflmer %>% group_by(subject_id, length_delay) %>%
+  summarise(meanRTperPerson=mean(RTMinusMedianRT, na.rm = T))
 
-# IDs with less information (gotta make sure this works once we have more participants):
-df_table <- as.data.frame(table(combined_data$ID))
-lessthan5 <- which(df_table$Freq != 5)
-condFin <- cond[-(lessthan5 * 5)]
-combined_data$b1_cond <- condFin
+addCondition <- select(dataSummary, IDs, b1_timingCond)
+colnames(addCondition) <- c('subject_id', 'cond')
 
-# Mean and SD across participants per condition and delat
-plot_data <- aggregate(mean ~ f_delay + b1_cond, combined_data, mean, na.rm = TRUE)
-sd_data_grouped <- aggregate(mean ~ f_delay + b1_cond, combined_data, sd, na.rm = TRUE)
-sd_data_grouped$SEM <- rep(NA, dim = c(1, nrow(sd_data_grouped)))
-sd_data_grouped$SEM[which(sd_data_grouped$b1_cond == "HP")] <- sd_data_grouped$mean[which(sd_data_grouped$b1_cond == "HP")]/sqrt(nHP)
-sd_data_grouped$SEM[which(sd_data_grouped$b1_cond == "LP")] <- sd_data_grouped$mean[which(sd_data_grouped$b1_cond == "LP")]/sqrt(nLP)
+summaryFileWithCondition <- merge(addCondition, summary_file )
 
+plottingFile <- summaryFileWithCondition %>% group_by(length_delay, cond) %>%
+  summarise(meanPerDelayByGroup=mean(meanRTperPerson, na.rm = T), 
+            sdPerDelayByGroup = sd(meanRTperPerson, na.rm = T),
+            semPerDelayByGroup = sd(meanRTperPerson, na.rm = T) / sqrt(80))
 
-plot_data$SEM <- sd_data_grouped$SEM
-
-plot_data$Condition <- plot_data$b1_cond
-
-plot_data$Condition[which(plot_data$Condition == "HP")] <- "HP condition"
-plot_data$Condition[which(plot_data$Condition == "LP")] <- "LP condition"
+plottingFile <- as.data.frame(plottingFile)
+plottingFile$f_delay <- factor(plottingFile$length_delay, ordered = TRUE, 
+                               levels = c("less3","3to6", "6to9", "9to15", "15to20"))
 
 figName = file.path(figDir, sprintf('n%d_RTplot.pdf', n)) 
 pdf(figName, pointsize=14)
@@ -653,9 +642,9 @@ pdf(figName, pointsize=14)
 # figName = file.path(sprintf('n%d_RT.tiff', n))
 # tiff(figName, units="in", width=7.5, height=5, res=300)
 
-ggplot(data = plot_data, aes(x = f_delay, y = mean, colour = b1_cond, group = b1_cond)) +
+ggplot(data = plottingFile, aes(x = f_delay, y = meanPerDelayByGroup, colour = cond, group = cond)) +
   geom_point() +
-  geom_errorbar(aes(ymin=mean-SEM, ymax=mean+SEM), color = "grey", width = 0.2) +
+  geom_errorbar(aes(ymin=meanPerDelayByGroup-semPerDelayByGroup, ymax=meanPerDelayByGroup+semPerDelayByGroup), color = "grey", width = 0.2) +
   geom_line() +
   scale_color_manual(values=c("blue" ,"red")) +
   xlab("Token maturation time") +
@@ -684,7 +673,7 @@ ggplot(data = plot_data, aes(x = f_delay, y = mean, colour = b1_cond, group = b1
     axis.title.y = element_text(margin = margin(r = 10)),
     axis.ticks = element_line(size = .5)
   ) +
-  labs(colour = "")
+  labs(colour = "") 
 
 dev.off()
 
